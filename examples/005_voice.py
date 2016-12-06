@@ -208,9 +208,6 @@ def main():
 
     pa.terminate()
 
-# main = plot_sample()
-# main = make_mary()
-main = test_note_parser()
 
 if __name__ == '__main__':
     main()
