@@ -24,8 +24,10 @@ def main():
 
     script = Script([
         Marker('hello'),
-        'hello',
-        Marker('hello'),
+        Voice('Daniel', 'hello'),
+        Delay(-150),
+
+        Marker('lets'),
         'lets do some euclid',
     ])  
 

@@ -75,7 +75,6 @@ class Script(object):
             command = [
                 'say',
                 '-v', voice.voice,
-                '-r', str(self.framerate),
                 '-o', path,
                 voice.phrase
             ]
