@@ -20,7 +20,7 @@ class SineGenerator(SoundGenerator):
         length_in_seconds = total_radians / radians_per_second
         length_in_frames = int(ceil(length_in_seconds * self.frame_rate))
 
-        abscissae = np.linspace(0, total_radians, length_in_frames, endpoint=True)
+        abscissae = np.linspace(0, total_radians, length_in_frames, endpoint=False)
         ordinates = np.sin(abscissae, dtype=np.float32)
         ordinates *= self.amplitude
 
