@@ -8,6 +8,7 @@ class SineGenerator(SoundGenerator):
         self.amplitude = amplitude
         self.base_length_in_seconds = base_length_in_seconds
 
+
     def __iter__(self):
         from math import pi, ceil
 
@@ -23,6 +24,8 @@ class SineGenerator(SoundGenerator):
         abscissae = np.linspace(0, total_radians, length_in_frames, endpoint=False)
         ordinates = np.sin(abscissae, dtype=np.float32)
         ordinates *= self.amplitude
+
+        frames_per_radian = int(self.frame_rate / radians_per_second)
 
         _ = yield
 
