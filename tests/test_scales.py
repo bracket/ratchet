@@ -26,3 +26,32 @@ def test_frequency():
     for pitch, expected in tests.items():
         actual = pitch_to_frequency(pitch)
         assert actual == approx(expected)
+
+
+def test_parse_notes():
+    from ratchet.scales import parse_notes
+    from ratchet.scales import Pitch, Note, Duration
+
+    notes = 'c4/2 c4#/4 d2/2o a4bn/1'
+
+    expected = [
+        Note(
+            Pitch('c', 4, None),
+            Duration(2, None)
+        ),
+        Note(
+            Pitch('c', 4, '#'),
+            Duration(4, None)
+        ),
+        Note(
+            Pitch('d', 2, None),
+            Duration(2, 'o')
+        ),
+        Note(
+            Pitch('a', 4, 'bn'),
+            Duration(1, None)
+        )
+    ]
+
+    for e, a in zip(expected, parse_notes(notes)):
+        assert a == e

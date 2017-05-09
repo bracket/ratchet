@@ -46,7 +46,7 @@ def pitch_to_frequency(pitch, a4=440.):
     a4_step = 12 * 4 + 9
     chromatic = make_scale('c', 'chromatic')
 
-    sharps, flats = parse_accents(pitch.accents)
+    sharps, flats = parse_accidentals(pitch.accidentals)
 
     steps = 12 * pitch.octave + chromatic[pitch.name] + sharps - flats
     steps -= a4_step
@@ -58,7 +58,7 @@ def pitch_to_midi(pitch):
     a4_step = 12 * 4 + 9
     chromatic = make_scale('c', 'chromatic')
 
-    sharps, flats = parse_accents(pitch.accents)
+    sharps, flats = parse_accidentals(pitch.accidentals)
 
     steps = 12 * pitch.octave + chromatic[pitch.name] + sharps - flats
     steps -= a4_step
@@ -66,10 +66,13 @@ def pitch_to_midi(pitch):
     return 69 + steps
 
 
-def parse_accents(accents):
+def parse_accidentals(accidentals):
     sharps, flats = 0, 0
 
-    for a in accents:
+    if not accidentals:
+        return sharps, flats
+
+    for a in accidentals:
         if a == '#':
             if flats:
                 flats -= 1
@@ -96,9 +99,9 @@ def note_grammar():
     g['sign']     = r'[-+]'
     g['digits']   = r'[0-9]+'
     g['integer']  = r'{sign}?{digits}'.format(**g)
-    g['accents']  = r'[#bn]+'
+    g['accidentals']  = r'[#bn]+'
 
-    g['pitch']    = r'(?P<name>{name})(?P<octave>{integer})(?P<accents>{accents})?'.format(**g)
+    g['pitch']    = r'(?P<name>{name})(?P<octave>{integer})(?P<accidentals>{accidentals})?'.format(**g)
     g['duration'] = r'/(?P<length>{digits})(?P<length_modifier>o)?'.format(**g)
 
     g['note']     = r'{pitch}{duration}'.format(**g)
@@ -122,7 +125,7 @@ def tokenize(regex, text):
         if not match:
             raise TokenizationError('no match', { 'text' : text, 'start' : start })
 
-        if match.end() == start:
+        if match.start() == match.end():
             raise TokenizationError('empty match', { 'text' : text, 'start' : start })
 
         yield match
@@ -143,12 +146,12 @@ def parse_notes(text):
         if g('ws'):
             continue
 
-        pitch = Pitch(g('name'), int(g('octave')), g('accents'))
+        pitch = Pitch(g('name'), int(g('octave')), g('accidentals'))
         duration = Duration(int(g('length')), g('length_modifier'))
 
         yield Note(pitch, duration)
 
 
-Pitch = namedtuple('Pitch', 'name octave accents')
+Pitch = namedtuple('Pitch', 'name octave accidentals')
 Duration = namedtuple('Duration', 'length length_modifier')
 Note = namedtuple('Note', 'pitch duration')
