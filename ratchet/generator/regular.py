@@ -1,5 +1,7 @@
+from ..interval import Interval
 from .sound_generator import SoundGenerator
 from collections import namedtuple
+
 import numpy as np
 
 __all__ = [
@@ -93,32 +95,5 @@ def resize_output_sample(output_sample, source_sample, new_frame_count):
         output_sample.resize((source_channels, new_frame_count), refcheck=False)
 
     return output_sample
-
-
-class Interval(object):
-    def __init__(self, start, end):
-        self.start = start
-        self.end = end
-
-
-    def length(self):
-        return self.end - self.start
-
-
-    def intersection(self, other):
-        return Interval(max(self.start, other.start), min(self.end, other.end))
-
-
-    def shift(self, amount):
-        return Interval(self.start + amount, self.end + amount)
-
-
-    def slice(self):
-        return slice(self.start, self.end)
-
-
-    def __repr__(self):
-        return 'Interval({}, {})'.format(self.start, self.end)
-
 
 QueueEntry = namedtuple('QueueEntry', [ 'interval', 'channels', 'frame_count', 'sample' ])
