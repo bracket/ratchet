@@ -176,24 +176,60 @@ def make_mary():
     return out
 
 
+def write_mary():
+    import aifc
+
+    sample = make_mary()
+    final_sample = (sample * (2 ** 15 - 1)).astype(dtype='>i2')
+
+    with aifc.open('mary.caff', 'wb') as out:
+        out.setframerate(44100)
+        out.setnchannels(1)
+        out.setsampwidth(2)
+
+        out.writeframes(final_sample.tobytes())
+
+
+def test_aiff():
+    import aifc
+
+    with aifc.open('mary.caff', 'rb') as fd:
+        print(fd.getparams())
+
+
 def main():
+    import aifc
+
+    # test_aiff()
+    # return
+
+    write_mary()
+    return
+
     pa = pyaudio.PyAudio()
 
     # sample = shifted_sample(0.)
     sample = make_mary()
 
-    current_offset = [ 0 ]
+    # with aifc.open('test.caff', 'rb') as fd:
+    #     sample = np.frombuffer(fd.readframes(fd.getnframes()), dtype='>i2')
+    #     sample = sample.astype(np.float32) / (2 ** 15)
+    #     print(sample.shape)
+
+
+    current_offset = 0
 
     def callback(in_data, frame_count, time_info, status):
-        start = current_offset[0]
-        end = current_offset[0] = start + frame_count
+        nonlocal current_offset
+        start = current_offset
+        current_offset = start + frame_count
 
-        return (sample[start:end], pyaudio.paContinue)
-        
+        return (sample[start:current_offset], pyaudio.paContinue)
+
     stream = pa.open(
         format = pyaudio.paFloat32,
         channels = CHANNELS,
-        rate = RATE,
+        rate = int(RATE / 2),
         stream_callback = callback,
         output = True,
     )
