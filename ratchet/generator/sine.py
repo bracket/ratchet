@@ -25,8 +25,6 @@ class SineGenerator(SoundGenerator):
         ordinates = np.sin(abscissae, dtype=np.float32)
         ordinates *= self.amplitude
 
-        frames_per_radian = int(self.frame_rate / radians_per_second)
-
         _ = yield
 
         while True:

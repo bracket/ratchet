@@ -1,15 +1,16 @@
-from ..generator.regular import RegularGenerator
+from ..generator.regular import make_regular_generator
 from .runner import Runner
 import numpy as np
-import pyaudio
 import sched
 import time
 
 class PyAudioRunner(Runner):
     def run(self, generator):
+        import pyaudio
+
         pa = pyaudio.PyAudio()
 
-        generator = RegularGenerator(generator)
+        generator = make_regular_generator(generator, 1024)
         target_frame_delta = int(.1 * generator.frame_rate)
         generator.prime_queue(target_frame_delta)
 

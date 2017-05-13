@@ -21,8 +21,24 @@ class Interval(Interval_):
         return slice(self.start, self.end)
 
 
+    def __add__(self, right):
+        return Interval(self.start + right, self.end + right)
+
+
+    def __radd__(self, left):
+        return Interval(left + self.start, left + self.end)
+
+
     def __sub__(self, right):
-        return Interval(self.start - right
+        return Interval(self.start - right, self.end - right)
+
+
+    def __rsub__(self, left):
+        return Interval(left - self.end, left - self.start)
+
+
+    def __neg__(self):
+        return Interval(-self.end, -self.start)
 
 
     def __repr__(self):

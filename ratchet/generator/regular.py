@@ -5,8 +5,11 @@ from collections import namedtuple
 import numpy as np
 
 __all__ = [
-    'RegularGenerator'
+    'RegularGenerator',
+    'make_regular_generator',
 ]
+
+QueueEntry = namedtuple('QueueEntry', [ 'interval', 'channels', 'frame_count', 'sample' ])
 
 class RegularGenerator(SoundGenerator):
     def __init__(self, source_generator, queue_frame_count = 1024):
@@ -50,7 +53,7 @@ class RegularGenerator(SoundGenerator):
 
     def __iter__(self):
         frame_count = yield None
-        
+
         queue = self.queue
         current = Interval(0, frame_count)
         ping = pong = None
@@ -58,7 +61,7 @@ class RegularGenerator(SoundGenerator):
         entry = queue.pop(0)
 
         while True:
-            while entry.interval.end < current.start:
+            while entry.interval.end <= current.start:
                 entry = queue.pop(0)
 
             ping = resize_output_sample(ping, entry.sample, current.length())
@@ -73,7 +76,10 @@ class RegularGenerator(SoundGenerator):
                 ping_filled = current.end <= entry.interval.end
 
                 if ping_filled:
-                    frame_count = yield ping
+                    # TODO: Temporary fix for double buffering messing up.
+                    # This class needs more testing and documentation
+
+                    frame_count = yield ping.copy()
                     current = Interval(current.end, current.end + frame_count)
                     ping, pong = pong, ping
                     ping = resize_output_sample(ping, entry.sample, current.length())
@@ -96,4 +102,12 @@ def resize_output_sample(output_sample, source_sample, new_frame_count):
 
     return output_sample
 
-QueueEntry = namedtuple('QueueEntry', [ 'interval', 'channels', 'frame_count', 'sample' ])
+
+def make_regular_generator(g, frame_count):
+    if isinstance(g, RegularGenerator):
+        if g.queue_frame_count == frame_count:
+            return g
+        else:
+            return RegularGenerator(g.source_generator, frame_count)
+
+    return RegularGenerator(g, frame_count)
