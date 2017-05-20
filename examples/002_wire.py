@@ -14,6 +14,7 @@ def main():
     def callback(in_data, frame_count, time_info, status):
         # print(np.frombuffer(in_data, dtype=np.int16))
         # fd.write(in_data)
+        print(frame_count)
         return (in_data, pyaudio.paContinue)
 
     format = pa.get_format_from_width(WIDTH)
@@ -24,13 +25,14 @@ def main():
         rate = RATE,
         input = True,
         output = True,
-        stream_callback = callback
+        stream_callback = callback,
+        frames_per_buffer=256,
     )
 
     stream.start_stream()
 
     while stream.is_active():
-        time.sleep(0.01)
+        time.sleep(0.0025)
 
     stream.stop_stream()
     stream.close()
