@@ -5,13 +5,18 @@ import sched
 import time
 
 class PyAudioRunner(Runner):
+    def __init__(self, chunk_size=256):
+        super().__init__()
+
+        self.chunk_size = chunk_size
+
     def run(self, generator):
         import pyaudio
 
         pa = pyaudio.PyAudio()
 
-        generator = make_regular_generator(generator, 1024)
-        target_frame_delta = int(.1 * generator.frame_rate)
+        generator = make_regular_generator(generator, self.chunk_size)
+        target_frame_delta = self.chunk_size
         generator.prime_queue(target_frame_delta)
 
         current_frame = 0
@@ -46,12 +51,15 @@ class PyAudioRunner(Runner):
             scheduler.enterabs(target_frame, 1, fill_generator_queue)
 
 
+        #TODO: Initialize other parameters from generator
+
         stream = pa.open(
             format = pyaudio.paFloat32,
             channels = 1,
             rate = generator.frame_rate,
             stream_callback = callback,
             output = True,
+            frames_per_buffer=self.chunk_size,
         )
 
         scheduler = sched.scheduler(time_func, delay_func)
