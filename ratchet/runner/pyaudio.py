@@ -17,7 +17,7 @@ class PyAudioRunner(Runner):
 
         generator = make_regular_generator(generator, self.chunk_size)
         target_frame_delta = self.chunk_size
-        generator.prime_queue(target_frame_delta)
+        generator.prime_queue()
 
         current_frame = 0
         iterator = generator.start()
@@ -26,7 +26,7 @@ class PyAudioRunner(Runner):
             nonlocal current_frame
 
             current_frame += frame_count
-            return (iterator.send(frame_count), pyaudio.paContinue)
+            return (next(iterator), pyaudio.paContinue)
 
 
         def time_func():

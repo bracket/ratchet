@@ -58,9 +58,5 @@ class Microphone(SoundGenerator):
         while self.stream.is_active() or samples:
             in_data = self.stream.read(self.chunk_size, exception_on_overflow=False)
             array = np.frombuffer(in_data, dtype)
-            yield array.reshape(shape).astype(np.float32)/32768.
 
-            # try:
-            #     yield samples.pop(0)
-            # except:
-            #     yield empty
+            yield array.reshape(shape).astype(np.float32)/32768.

@@ -17,7 +17,7 @@ class FileWriter(Runner):
         with aifc.open(str(self.path), 'wb') as out:
             while True:
                 try:
-                    sample = g.send(1024)
+                    sample = next(g)
                 except StopIteration:
                     return
 

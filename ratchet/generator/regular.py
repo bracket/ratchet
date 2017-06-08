@@ -12,7 +12,7 @@ __all__ = [
 QueueEntry = namedtuple('QueueEntry', [ 'interval', 'channels', 'frame_count', 'sample' ])
 
 class RegularGenerator(SoundGenerator):
-    def __init__(self, source_generator, queue_frame_count = 1024):
+    def __init__(self, source_generator, chunk_size = 1024):
         super().__init__(source_generator.frame_rate)
 
         self.source_generator = source_generator
@@ -20,13 +20,13 @@ class RegularGenerator(SoundGenerator):
         self.queue = [ ]
         self.last_start = None
         self.last_end = 0
-        self.queue_frame_count = queue_frame_count
+        self.chunk_size = chunk_size
 
 
-    def prime_queue(self, frame_count):
+    def prime_queue(self):
         self.extend_queue()
 
-        while self.last_start < frame_count:
+        while self.last_start < self.chunk_size:
                 self.extend_queue()
 
 
@@ -34,7 +34,7 @@ class RegularGenerator(SoundGenerator):
         if self.generator is None:
             self.generator = self.source_generator.start()
 
-        sample = self.generator.send(self.queue_frame_count)
+        sample = next(self.generator)
         shape = sample.shape
 
         if len(shape) == 1:
@@ -52,9 +52,11 @@ class RegularGenerator(SoundGenerator):
 
 
     def __iter__(self):
-        frame_count = yield None
+        yield None
 
         queue = self.queue
+        frame_count = self.chunk_size
+
         current = Interval(0, frame_count)
         ping = pong = None
 
@@ -79,7 +81,7 @@ class RegularGenerator(SoundGenerator):
                     # TODO: Temporary fix for double buffering messing up.
                     # This class needs more testing and documentation
 
-                    frame_count = yield ping.copy()
+                    yield ping.copy()
                     current = Interval(current.end, current.end + frame_count)
                     ping, pong = pong, ping
                     ping = resize_output_sample(ping, entry.sample, current.length())
@@ -103,11 +105,11 @@ def resize_output_sample(output_sample, source_sample, new_frame_count):
     return output_sample
 
 
-def make_regular_generator(g, frame_count):
+def make_regular_generator(g, chunk_size):
     if isinstance(g, RegularGenerator):
-        if g.queue_frame_count == frame_count:
+        if g.chunk_size == chunk_size:
             return g
         else:
-            return RegularGenerator(g.source_generator, frame_count)
+            return RegularGenerator(g.source_generator, chunk_size)
 
-    return RegularGenerator(g, frame_count)
+    return RegularGenerator(g, chunk_size)
