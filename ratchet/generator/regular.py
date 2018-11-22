@@ -12,7 +12,24 @@ __all__ = [
 QueueEntry = namedtuple('QueueEntry', [ 'interval', 'channels', 'frame_count', 'sample' ])
 
 class RegularGenerator(SoundGenerator):
+    ''' Regularized chunk length of other generators
+
+        SoundGenerators are not required to supply the same number of frames
+        each time they yield, which can make some operations difficult to when
+        dealing with chunks from multiple generators.  RegularGenerator takes
+        an arbitrary source generator and replaces with a generator which
+        yields chunks of a fixed size.
+    '''
+
     def __init__(self, source_generator, chunk_size = 1024):
+        '''
+            source_generator
+                generator whose chunks are to be regularized.  frame_rate is
+                taken from this generator.
+
+            chunk_size
+                number of frames yield with each chunk
+        '''
         super().__init__(source_generator.frame_rate)
 
         self.source_generator = source_generator

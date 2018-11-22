@@ -14,7 +14,7 @@ def main():
     def callback(in_data, frame_count, time_info, status):
         # print(np.frombuffer(in_data, dtype=np.int16))
         # fd.write(in_data)
-        print(frame_count)
+        # print(frame_count)
         return (in_data, pyaudio.paContinue)
 
     format = pa.get_format_from_width(WIDTH)

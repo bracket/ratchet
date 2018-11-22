@@ -24,7 +24,10 @@ class Adder(SoundGenerator):
         yield None
 
         while True:
-            out = first.send(self.frame_count)
+            # I have no idea what this is supposed to do
+            # out = first.send(self.frame_count)
+
+            out = first.send(None)
 
             for g in gens:
                 frame = next(g)
