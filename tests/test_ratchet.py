@@ -9,39 +9,33 @@ def make_silent_generator(frame_count, frame_rate):
         while True:
             yield empty
 
-    return GenericGenerator(source_generator(), frame_rate)
+    return GenericGenerator(frame_rate, source_generator())
 
 
 def test_regular_generator_single_channel():
     from ratchet.generator.regular import RegularGenerator
 
-    source_generator = make_silent_generator(64, 44100)
+    source_generator = make_silent_generator(7, 44100)
 
-    generator = RegularGenerator(source_generator)
-    g = generator.start()
-    last_end = 0
+    generator = RegularGenerator(source_generator, 8)
 
-    for expected_frame_count in range(10, 101, 10):
-        last_end += expected_frame_count
+    r = range(0, 56, 8)
 
-        while generator.last_end < last_end:
-            generator.extend_queue()
+    for i, b in zip(r, iter(generator)):
+        channels, frame_count = b.shape
 
-        sample = g.send(expected_frame_count)
-        actual_channels, actual_frame_count = sample.shape
-
-        assert actual_channels == 1
-        assert actual_frame_count == expected_frame_count
-        assert not np.any(sample)
+        assert channels == 1
+        assert frame_count == 8
 
 
 def test_sine_generator():
     from ratchet.generator.sine import SineGenerator
 
     generator = SineGenerator(44100, 440, .5)
-    sample = generator.start().send(0)
+    sample = next(iter(generator))
 
     epsilon = 1e-4
+
 
     assert abs(np.max(sample) - 0.5) < epsilon
     assert abs(np.min(sample) + 0.5) < epsilon

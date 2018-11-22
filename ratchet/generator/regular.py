@@ -1,6 +1,4 @@
-from ..interval import Interval
 from .sound_generator import SoundGenerator
-from collections import namedtuple
 
 import numpy as np
 
@@ -9,15 +7,13 @@ __all__ = [
     'make_regular_generator',
 ]
 
-QueueEntry = namedtuple('QueueEntry', [ 'interval', 'channels', 'frame_count', 'sample' ])
-
 class RegularGenerator(SoundGenerator):
     ''' Regularized chunk length of other generators
 
         SoundGenerators are not required to supply the same number of frames
-        each time they yield, which can make some operations difficult to when
+        each time they yield, which can make some operations difficult when
         dealing with chunks from multiple generators.  RegularGenerator takes
-        an arbitrary source generator and replaces with a generator which
+        an arbitrary source generator and replaces it with a generator which
         yields chunks of a fixed size.
     '''
 
@@ -33,25 +29,41 @@ class RegularGenerator(SoundGenerator):
         super().__init__(source_generator.frame_rate)
 
         self.source_generator = source_generator
-        self.generator = None
-        self.queue = [ ]
-        self.last_start = None
-        self.last_end = 0
+        self.generator = iter(self.source_generator)
         self.chunk_size = chunk_size
 
+        self.in_block = None
+        self.in_start = 0
 
-    def prime_queue(self):
-        self.extend_queue()
+        self.out_block = None
+        self.out_start = 0
 
-        while self.last_start < self.chunk_size:
-                self.extend_queue()
+    @property
+    def in_end(self):
+        if self.in_block is None:
+            return 0
+
+        channels, frame_count = self.in_block.shape
+
+        return self.in_start + frame_count
+
+    @property
+    def out_end(self):
+        if self.out_block is None:
+            return 0
+
+        channels, frame_count = self.out_block.shape
+
+        return self.out_start + frame_count
 
 
-    def extend_queue(self):
-        if self.generator is None:
-            self.generator = self.source_generator.start()
+    def underflow(self):
+        if self.in_block is not None:
+            channels, frame_count = self.in_block.shape
+            self.in_start += frame_count
 
-        sample = next(self.generator)
+        self.in_block = sample = next(self.generator)
+
         shape = sample.shape
 
         if len(shape) == 1:
@@ -60,67 +72,43 @@ class RegularGenerator(SoundGenerator):
             raise RuntimeError('invalid shape for generator output', { 'shape' : shape })
 
         if shape != sample.shape:
-            sample = sample.reshape(shape)
+            self.in_block = sample.reshape(shape)
 
-        channels, frame_count = sample.shape
-
-        self.last_start, self.last_end = self.last_end, self.last_end + frame_count
-        self.queue.append(QueueEntry(Interval(self.last_start, self.last_end), channels, frame_count, sample))
+        if self.out_block is None:
+            channels, frame_count = shape
+            self.out_block = np.zeros(dtype=sample.dtype, shape=(channels, self.chunk_size))
 
 
     def __iter__(self):
-        yield None
-
-        queue = self.queue
-        frame_count = self.chunk_size
-
-        current = Interval(0, frame_count)
-        ping = pong = None
-
-        entry = queue.pop(0)
+        frames_copied = 0
 
         while True:
-            while entry.interval.end <= current.start:
-                entry = queue.pop(0)
+            while frames_copied <= self.out_end:
+                start = max(self.in_start, self.out_start)
+                end   = min(self.in_end, self.out_end)
 
-            ping = resize_output_sample(ping, entry.sample, current.length())
-            intersection = current.intersection(entry.interval)
+                if end <= start:
+                    try:
+                        self.underflow()
+                        continue
+                    except StopIteration:
+                        if self.out_block is not None:
+                            yield self.out_block
+                        raise
 
-            while intersection.length() > 0:
-                source_slice = intersection.shift(-entry.interval.start).slice()
-                target_slice = intersection.shift(-current.start).slice()
+                self.out_block[:,start - self.out_start:end - self.out_start] = (
+                    self.in_block[:,start - self.in_start:end - self.in_start]
+                )
 
-                ping[:,target_slice] = entry.sample[:,source_slice]
+                frames_copied += (end - start)
 
-                ping_filled = current.end <= entry.interval.end
+            yield self.out_block
 
-                if ping_filled:
-                    # TODO: Temporary fix for double buffering messing up.
-                    # This class needs more testing and documentation
-
-                    yield ping.copy()
-                    current = Interval(current.end, current.end + frame_count)
-                    ping, pong = pong, ping
-                    ping = resize_output_sample(ping, entry.sample, current.length())
-                else:
-                    entry = queue.pop(0)
-
-                intersection = current.intersection(entry.interval)
+            self.out_block[:,:] = 0.
+            self.out_start += self.chunk_size
 
 
-def resize_output_sample(output_sample, source_sample, new_frame_count):
-    source_channels, source_frame_count = source_sample.shape
-
-    if output_sample is None:
-        return np.zeros(shape=(source_channels, new_frame_count), dtype=source_sample.dtype)
-
-    output_channels, output_frame_count = output_sample.shape
-
-    if output_frame_count < new_frame_count:
-        output_sample.resize((source_channels, new_frame_count), refcheck=False)
-
-    return output_sample
-
+# TODO: This probably doesn't really do what I think the it does.
 
 def make_regular_generator(g, chunk_size):
     if isinstance(g, RegularGenerator):

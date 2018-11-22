@@ -15,12 +15,6 @@ class SoundGenerator(object):
         self.frame_rate = frame_rate
 
 
-    def start(self):
-        g = iter(self)
-        next(g)
-        return g
-
-
     @abstractmethod
     def __iter__(self):
         pass

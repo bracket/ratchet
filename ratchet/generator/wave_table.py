@@ -27,8 +27,6 @@ class WaveTable(SoundGenerator):
         table = envelope * self.wave_table
         table += np.concatenate([ table[:,middle:], table[:,:middle] ], axis=1)
 
-        yield
-
         while True:
             yield table
             # yield self.wave_table

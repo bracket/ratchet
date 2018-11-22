@@ -45,7 +45,5 @@ class SineGenerator(SoundGenerator):
         ordinates = np.sin(abscissae, dtype=np.float32)
         ordinates *= self.amplitude
 
-        _ = yield
-
         while True:
-            _ = yield ordinates
+            yield ordinates

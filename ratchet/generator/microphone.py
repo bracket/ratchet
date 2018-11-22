@@ -41,8 +41,6 @@ class Microphone(SoundGenerator):
             
             return (in_data, pyaudio.paContinue)
 
-        yield
-
         self.stream = pa.open(
             format=format,
             rate=self.frame_rate,
