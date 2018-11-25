@@ -36,7 +36,6 @@ def test_sine_generator():
 
     epsilon = 1e-4
 
-
     assert abs(np.max(sample) - 0.5) < epsilon
     assert abs(np.min(sample) + 0.5) < epsilon
     assert abs(np.mean(sample)) < epsilon

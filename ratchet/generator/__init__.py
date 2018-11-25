@@ -1,9 +1,11 @@
 '''
-    Various sound generators.  See documentation for the sound_generator module
-    for further explanation of generators.
+    Sound generators are classes providing functionality to generate and
+    compose blocks of sound samples.  See documentation for the sound_generator
+    module for further explanation of generators.
 '''
 
-from .sound_generator import SoundGenerator
 from .generic import GenericGenerator
-from .wave_table import WaveTable
 from .microphone import Microphone
+from .sine import SineGenerator
+from .sound_generator import SoundGenerator
+from .wave_table import WaveTable

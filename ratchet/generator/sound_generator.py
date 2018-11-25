@@ -5,8 +5,9 @@ __all__ = [ 'SoundGenerator' ]
 class SoundGenerator(object):
     '''
         Base class for all sound generators.  Derived classes must implement
-        __iter__, which produces blocks of PCM sound samples (as numpy arrays)
-        on request, at the frame_rate requested in the base class.
+        __iter__, which produces blocks of PCM sound samples (as floating point
+        numpy arrays, samples normalized between -1 and 1) on request, at the
+        frame_rate requested in the base class.
     '''
 
     __metaclass__ = ABCMeta

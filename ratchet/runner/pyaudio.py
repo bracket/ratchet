@@ -1,5 +1,7 @@
 from ..generator.regular import make_regular_generator
 from .runner import Runner
+from collections import deque
+
 import numpy as np
 import sched
 import time
@@ -17,41 +19,59 @@ class PyAudioRunner(Runner):
 
         generator = make_regular_generator(generator, self.chunk_size)
         target_frame_delta = self.chunk_size
-        generator.prime_queue()
 
-        current_frame = 0
-        iterator = generator.start()
+        last_played_frame = 0
+        last_generated_start = 0
+
+        chunk_queue = deque()
+        iterator = iter(generator)
 
         def callback(in_data, frame_count, time_info, status):
-            nonlocal current_frame
+            nonlocal last_played_frame
 
-            current_frame += frame_count
-            return (next(iterator), pyaudio.paContinue)
+            print('requested_frames', frame_count)
+            print('last_played_frame', last_played_frame)
+            print()
+            last_played_frame += frame_count
+            return (chunk_queue.popleft(), pyaudio.paContinue)
 
 
         def time_func():
-            return current_frame
+            return last_played_frame
 
 
         def delay_func(frames):
+            print('frames', frames)
+            print('frame_rate', generator.frame_rate)
             delay = frames / generator.frame_rate
+            print('delay', delay)
+            print()
             time.sleep(delay)
 
 
-        def fill_generator_queue():
+        def fill_runner_queue():
+            nonlocal last_played_frame
+            nonlocal last_generated_start
+            nonlocal chunk_queue
+
             if not stream.is_active():
                 cancel_all_events(scheduler)
                 return
 
-            target_frame = current_frame + target_frame_delta
+            target_frame = last_played_frame + target_frame_delta
 
-            while generator.last_start < target_frame:
-                generator.extend_queue()
+            while last_generated_start <= target_frame:
+                chunk = np.copy(next(iterator))
+                channels, frame_count = chunk.shape
+                chunk_queue.append(chunk)
 
-            scheduler.enterabs(target_frame, 1, fill_generator_queue)
+                last_generated_start += frame_count
+
+            scheduler.enterabs(target_frame, 1, fill_runner_queue)
 
 
-        #TODO: Initialize other parameters from generator
+        #TODO: Initialize other parameters from generator.
+        # Multiple channels might be nice
 
         stream = pa.open(
             format = pyaudio.paFloat32,
@@ -64,7 +84,14 @@ class PyAudioRunner(Runner):
 
         scheduler = sched.scheduler(time_func, delay_func)
 
-        scheduler.enter(0, 1, fill_generator_queue)
+        # Ready
+        chunk = np.copy(next(iterator))
+
+        # Set
+        chunk_queue.append(chunk)
+
+        # Go
+        scheduler.enter(0, 1, fill_runner_queue)
 
         stream.start_stream()
         scheduler.run()
